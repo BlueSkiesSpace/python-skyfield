@@ -1,4 +1,4 @@
-from numpy import abs, einsum, sqrt, where
+from numpy import abs, einsum, sqrt, where, newaxis
 
 from .constants import C, AU_M, C_AUDAY, GS
 from .functions import _AVOID_DIVIDE_BY_ZERO, dots, length_of
@@ -52,8 +52,13 @@ def add_deflection(position, observer, ephemeris, t,
         bposition = deflector.at(ts.tdb(jd=jd_tdb)).position.au  # TODO
 
         # Get position of gravitating body wrt observer at time 'jd_tdb'.
+        try:
+            gpv = bposition - observer
+        except ValueError:
+            bposition = bposition[:,:,newaxis]
+            gpv = bposition - observer
+            jd_tdb = jd_tdb[:,newaxis]
 
-        gpv = bposition - observer
 
         # Compute light-time from point on incoming light ray that is closest
         # to gravitating body.
@@ -68,8 +73,10 @@ def add_deflection(position, observer, ephemeris, t,
         # if dlt > 0.0:
         #     tclose = jd - dlt
 
+
         tclose = where(dlt > 0.0, jd_tdb - dlt, tclose)
         tclose = where(tlt < dlt, jd_tdb - tlt, tclose)
+
 
         # if tlt < dlt:
         #     tclose = jd - tlt
@@ -109,8 +116,11 @@ def light_time_difference(position, observer_position):
 
     # Light-time returned is the projection of vector 'pos_obs' onto the
     # unit vector 'u1' (formed from 'pos1'), divided by the speed of light.
+    try:
+        diflt = einsum('a...,a...', u1, observer_position) / C_AUDAY
+    except ValueError:
+        diflt = einsum('a...,a...', u1, observer_position[:,:,newaxis]) / C_AUDAY
 
-    diflt = einsum('a...,a...', u1, observer_position) / C_AUDAY
     return diflt
 
 def _add_deflection(position, observer, deflector, rmass):

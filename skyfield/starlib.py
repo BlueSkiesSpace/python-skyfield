@@ -1,6 +1,6 @@
 """Python class for a distant object with, at most, proper motion."""
 
-from numpy import array, cos, empty, isnan, outer, sin, where
+from numpy import array, cos, empty, isnan, outer, sin, where, newaxis, einsum, transpose
 from .constants import AU_KM, ASEC2RAD, C, C_AUDAY, DAY_S, T0
 from .functions import length_of
 from .relativity import light_time_difference
@@ -111,13 +111,23 @@ class Star(object):
         t = observer.t
         dt = light_time_difference(position, observer.position.au)
         if t.shape:
-            position = (outer(velocity, t.tdb + dt - self.epoch).T + position).T
+            try:
+                res = outer(velocity, t.tdb + dt - self.epoch).T
+                position = (res + position).T
+            except ValueError:
+                res = transpose(einsum('i...,j...',velocity, t.tdb[:,newaxis]+dt - self.epoch),[1,0,2])
+                position = transpose(res+position[:,:,newaxis],[0,2,1])
         else:
             position = position + velocity * (t.tdb + dt - self.epoch)
         if len(position.shape) > 1:
             if len(observer.position.au.shape) > 1:
-                vector = position - observer.position.au
-                vel = (observer.velocity.au_per_d.T - velocity).T
+                try:
+                    vector = position - observer.position.au
+                    vel = (observer.velocity.au_per_d.T - velocity).T
+                except ValueError:
+                    vector = position - observer.position.au[:,:,newaxis]
+                    vel = transpose(observer.velocity.au_per_d.T[:,:,newaxis] - velocity,[1,0,2])
+                    
             else:
                 vector = (position.T - observer.position.au).T
                 vel = (observer.velocity.au_per_d - velocity.T).T
