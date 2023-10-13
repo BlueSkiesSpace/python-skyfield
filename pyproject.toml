@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "python-skyfield"
+version = "1.46"
+description = ""
+authors = ["Brandon Rhodes <brandon@rhodesmill.org>"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "python_skyfield"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+certifi = ">=2017.4.17"
+jplephem = ">=2.13"
+sgp4 = ">=2.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
