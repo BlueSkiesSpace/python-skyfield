@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "python-skyfield"
+name = "skyfield"
 version = "1.46"
 description = ""
 authors = ["Brandon Rhodes <brandon@rhodesmill.org>"]
