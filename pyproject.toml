@@ -5,7 +5,7 @@ description = ""
 authors = ["Brandon Rhodes <brandon@rhodesmill.org>"]
 license = "MIT"
 readme = "README.md"
-packages = [{include = "python_skyfield"}]
+
 
 [tool.poetry.dependencies]
 python = "^3.10"
