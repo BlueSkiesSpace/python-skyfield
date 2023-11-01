@@ -184,6 +184,7 @@ class ICRF(object):
             self.target,
         )
         item._ephemeris = self._ephemeris
+        item._observer_gcrs_au = self._observer_gcrs_au[:,i]
         return item
     
     def __neg__(self):
