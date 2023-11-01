@@ -176,14 +176,16 @@ class ICRF(object):
         return build_position(p, v, self.t, body.target, self.target)
 
     def __getitem__(self, i):
-        return type(self)(
+        item = type(self)(
             self.position.au[:,i],
             self.velocity.au_per_d[:,i],
             self.t[i],
             self.center,
             self.target,
         )
-
+        item._ephemeris = self._ephemeris
+        return item
+    
     def __neg__(self):
         return type(self)(
             -self.position.au,
