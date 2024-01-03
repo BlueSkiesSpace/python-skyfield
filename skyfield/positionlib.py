@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Classes representing different kinds of astronomical position."""
 
-from numpy import array, cos, einsum, full, reshape, nan, nan_to_num
+from numpy import array, cos, einsum, full, reshape, nan, nan_to_num, transpose
 from . import framelib
 from .constants import ANGVEL, AU_M, C, ERAD, DAY_S, RAD2DEG, pi, tau
 from .descriptorlib import reify
@@ -858,8 +858,11 @@ def _to_altaz(position, temperature_C, pressure_mbar):
             R = rotation_at(position.t)
         else:
             raise ValueError(_altaz_message)
-
-    position_au = mxv(R, position.position.au)
+   
+    try:
+        position_au = mxv(R, position.position.au)
+    except ValueError:
+        position_au = mxv(R, transpose(position.position.au, (0, 2, 1)))
     r_au, alt, az = to_spherical(position_au)
 
     if temperature_C is None:
