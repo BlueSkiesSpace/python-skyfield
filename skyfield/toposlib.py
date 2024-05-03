@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+"""Classes that represent a ‘topocentric’ position on the Earth’s surface."""
 
 from numpy import arctan2, array, array2string, cos, exp, sin, sqrt
 from .constants import ANGVEL, DAY_S, RAD2DEG, T0, pi, tau
@@ -143,6 +144,11 @@ class Geoid(object):
         self._one_minus_flattening_squared = omf * omf
         f = 1.0 / inverse_flattening
         self._e2 = 2.0*f - f*f
+
+    @reify
+    def polar_radius(self):
+        """The Earth’s polar radius, as a :class:`~skyfield.units.Distance`."""
+        return Distance(self.radius.au * (1.0 - 1.0 / self.inverse_flattening))
 
     def latlon(self, latitude_degrees, longitude_degrees, elevation_m=0.0,
                cls=GeographicPosition):

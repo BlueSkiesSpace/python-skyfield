@@ -5,14 +5,46 @@ Changelog
 .. TODO After finding how to test TIRS reference frame, add it to changelog.
         And double-check the constellation boundaries array.
 
-v1.47 — Unreleased
-------------------
+-----------------
+Released versions
+-----------------
+
+v1.48 — 2024 February 7
+-----------------------
+
+* Times now support the ``<`` operator, so Python can sort them.
+
+* For convenience, geoids like :data:`~skyfield.toposlib.wgs84` have a
+  new attribute :data:`~skyfield.toposlib.Geoid.polar_radius`.
+
+* You can no longer subtract two positions unless they have the same
+  ``.center``.  Otherwise, a ``ValueError`` is raised.  This check has
+  always been performed when you subtract vector functions, but it was
+  missing from the position subtraction routine.
+
+* On days that the Sun fails to rise and set in the Arctic and
+  Antarctic, the new rising and setting routines now correctly set the
+  value ``False`` not only for sunrise but also for sunset.
+
+v1.47 — 2024 January 13
+-----------------------
+
+* Added faster and more accurate rising and setting routines!
+  See `risings-and-settings` for documentation and examples of the new
+  :func:`~skyfield.almanac.find_risings()` and
+  :func:`~skyfield.almanac.find_settings()` and
+  :func:`~skyfield.almanac.find_transits()` functions.
+  `#662 <https://github.com/skyfielders/python-skyfield/issues/662>`_
+
+* Skyfield’s internal table for the ∆T Earth orientation parameter has
+  been updated, so that its predictions now extend to 2025-01-18.
 
 * Constellation abbreviations are now consistent between the
   :func:`~skyfield.api.load_constellation_map()` table and the
   :func:`~skyfield.api.load_constellation_names()` list.  Previously,
   ``CVn`` and ``TrA`` had been mis-capitalized in the list as ``Cvn``
   and ``Tra``.
+  `#906 <https://github.com/skyfielders/python-skyfield/issues/906>`_
 
 v1.46 — 2023 April 9
 --------------------
@@ -269,7 +301,7 @@ v1.35 — 2020 December 31
   (The old method will remain in place to support legacy code,
   but is discouraged in new applications.)
 
-* The effects of :ref:`Polar motion` — if configured — are now included
+* The effects of :ref:`polar-motion` — if configured — are now included
   both when computing the position in space of an Earth latitude and longitude,
   and when determining the latitude and longitude beneath a celestial position.
 
@@ -297,7 +329,7 @@ v1.34 — 2020 December 10
 
 * Added an official :class:`~skyfield.framelib.itrs` reference frame.
 
-* Added support for IERS :ref:`polar motion` 𝑥 and 𝑦.
+* Added support for IERS :ref:`polar-motion` 𝑥 and 𝑦.
 
 * Added a method :meth:`~skyfield.toposlib.GeographicPosition.lst_hours_at()`
   that computes Local Sidereal Time.

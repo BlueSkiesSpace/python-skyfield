@@ -5,7 +5,9 @@
 
 Quick links to the sections below:
 
-.. contents:: :local:
+.. contents::
+   :local:
+   :backlinks: none
 
 Version
 =======
@@ -213,6 +215,9 @@ Routines to search for events like sunrise, sunset, and Moon phase.
 
 .. autosummary::
 
+   find_risings
+   find_settings
+   find_transits
    seasons
    moon_phase
    moon_phases
@@ -401,6 +406,7 @@ Reference frames
    skyfield.framelib.ecliptic_frame
    skyfield.framelib.ecliptic_J2000_frame
    skyfield.framelib.galactic_frame
+   skyfield.sgp4lib.TEME
 
 Constellations
 ==============

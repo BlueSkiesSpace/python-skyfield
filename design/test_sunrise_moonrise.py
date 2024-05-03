@@ -6,7 +6,9 @@
 # Moon.  Is it able to match USNO predictions for one year?
 
 import datetime as dt
+import sys
 from collections import defaultdict
+from time import time
 from skyfield import almanac
 from skyfield.api import load, wgs84
 
@@ -123,37 +125,47 @@ def test(table, e, body):
 
     ts = load.timescale()
     t0 = ts.utc(2023, 1, 1, 7)
-    #t0 = ts.utc(2023, 1, 1, 10)
     t1 = ts.utc(2024, 1, 1, 7)
-    #t1 = ts.utc(2023, 4, 1, 7)
-    #e = load('de430.bsp')
     fredonia = wgs84.latlon(36 + 57/60.0, - (112 + 31/60.0))
     observer = e['Earth'] + fredonia
     horizon = -0.8333
-    #horizon = -0.8333333333333
-    t, y = almanac.find_risings(observer, body, t0, t1, horizon)
+    if len(sys.argv) > 1:
+        # old
+        if body.target == 10:
+            f = almanac.sunrise_sunset(e, fredonia)
+        else:
+            f = almanac.risings_and_settings(e, body, fredonia, horizon)
+        tt = time()
+        t, y = almanac.find_discrete(t0, t1, f)
+        duration = time() - tt
+        t = t[y == 1]
+    else:
+        # new
+        tt = time()
+        t, y = almanac.find_risings(observer, body, t0, t1) #, horizon)
+        duration = time() - tt
+    print('Duration:', duration, 'seconds')
     t -= dt.timedelta(hours=7)
-    #strings = t.utc_strftime('%m-%d %H%M:%S.%f')
-    #strings = t.utc_strftime('%m-%d %H%M')
-    #print(strings)
 
     skyfield_rises = []
 
-    for ti in t:
+    thirty_seconds = 1.0 / 24.0 / 60.0 / 2.0  # to round to next minute
+    for ti in t + thirty_seconds:
         u = ti.utc
-        tup = u.month, u.day, u.hour * 60 + u.minute + (u.second >= 30)
+        tup = u.month, u.day, u.hour * 60 + u.minute
         skyfield_rises.append(tup)
 
     errors = defaultdict(int)
 
     for u, s in zip(usno_rises, skyfield_rises):
-        if u[0:2] != s[0:2]:
+        month_and_day_matches = (u[0:2] == s[0:2])
+        if not month_and_day_matches:
             print()
-            print('Error: usno', u[0:2], 'skyfield', s[0:2])
+            print('Error: usno', u, 'skyfield', s)
             exit(1)
         error = u[2] - s[2]
         errors[error] += 1
-        print(error, end=' ')
+        print(error or '.', end=' ')
     print()
     print(sorted(errors.items()))
 
@@ -163,6 +175,7 @@ def test(table, e, body):
 
 def main():
     e = load('de421.bsp')
+    #e = load('de440.bsp')
     test(SUN_TABLE, e, e['Sun'])
     test(MOON_TABLE, e, e['Moon'])
 

@@ -76,7 +76,7 @@ def position_from_radec(ra_hours, dec_degrees, distance=1.0, epoch=None,
 class ICRF(object):
     """An |xyz| position and velocity oriented to the ICRF axes.
 
-    The International Coordinate Reference Frame (ICRF) is a permanent
+    The International Celestial Reference Frame (ICRF) is a permanent
     reference frame that is the replacement for J2000.  Their axes agree
     to within 0.02 arcseconds.  It also supersedes older equinox-based
     systems like B1900 and B1950.
@@ -168,6 +168,11 @@ class ICRF(object):
 
     def __sub__(self, body):
         """Subtract two ICRF vectors to produce a third."""
+        if self.center != body.center:
+            raise ValueError(
+                "you can only subtract two vectors"
+                " if they both start at the same center"
+            )
         p = self.position.au - body.position.au
         if self.velocity is None or body.velocity is None:
             v = None
@@ -291,7 +296,7 @@ class ICRF(object):
         Because this declination is measured from the plane of the
         Earth’s physical geographic equator, it will be slightly
         different than the declination returned by ``radec()`` if you
-        have loaded a :ref:`polar motion` file.
+        have loaded a :ref:`polar-motion` file.
 
         The coordinates are not adjusted for atmospheric refraction near
         the horizon.

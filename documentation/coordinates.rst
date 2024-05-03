@@ -192,8 +192,10 @@ Note that the distance is exactly the same as before,
 because this is exactly the same position —
 it’s merely being measured against a slightly different set of axes.
 
-Horizonal coordinates
-=====================
+.. _horizontal-coordinates:
+
+Altitude and azimuth (‘horizonal’ coordinates)
+==============================================
 
 Altitude and azimuth have already been explained
 in the :doc:`positions` chapter,

@@ -330,18 +330,31 @@ def _rising_hour_angle(latitude, declination, altitude_radians):
 def _transit_ha(latitude, declination, altitude_radians):
     return 0.0
 
-
+# Per https://aa.usno.navy.mil/faq/RST_defs we estimate 34 arcminutes of
+# atmospheric refraction and 16 arcminutes for the radius of the Sun.
+_sun_horizon_radians = -50.0 / 21600.0 * tau
+_refraction_radians = -34.0 / 21600.0 * tau
+_moon_radius_m = 1.7374e6
 
 def _find(observer, target, start_time, end_time, horizon_degrees, f):
+    # Build a function h() that returns the angle above or below the
+    # horizon we are aiming for, in radians.
     if horizon_degrees is None:
         tt = getattr(target, 'target', None)
         if tt == 10:
-            horizon_degrees = -0.8333  # USNO horizon+radius for sunrise/sunset
+            horizon_radians = _sun_horizon_radians
+            h = lambda distance: horizon_radians
+        elif tt == 301:
+            horizon_radians = _refraction_radians
+            h = lambda distance: horizon_radians - _moon_radius_m / distance.m
         else:
-            raise NotImplementedError
+            horizon_radians = _refraction_radians
+            h = lambda distance: horizon_radians
+    else:
+        horizon_radians = horizon_degrees / 360.0 * tau
+        h = lambda distance: horizon_radians
 
-    h = horizon_degrees / 360.0 * tau
-    geo = observer.vector_functions[-1]
+    geo = observer.vector_functions[-1]  # should we check observer.center?
     latitude = geo.latitude
 
     # Build an array of times 0.8 days apart, in the hopes that nothing
@@ -354,12 +367,12 @@ def _find(observer, target, start_time, end_time, horizon_degrees, f):
 
     # Determine the target's hour angle and declination at those times.
     _fastify(t)
-    ha, dec, _ = observer.at(t).observe(target).apparent().hadec()
+    ha, dec, distance = observer.at(t).observe(target).apparent().hadec()
 
     # Invoke our geometry formula: for each time `t`, predict the hour
     # angle at which the target will next reach the horizon, if its
     # declination were to remain constant.
-    desired_ha_radians = f(latitude, dec, h)
+    desired_ha_radians = f(latitude, dec, h(distance))
 
     # So at each time `t`, how many radians must the sky turn to bring
     # the target to the horizon?
@@ -381,29 +394,77 @@ def _find(observer, target, start_time, end_time, horizon_degrees, f):
 
     ha_per_day = tau            # angle the celestrial sphere rotates in 1 day
 
-    #for i in 0,:
-    for i in 0, 1:  # Good enough for Sun and planets?
-    #for i in 0, 1, 2:
-    #for i in 0, 1, 2, 3:  # Gets Moon to within a few hundredths?
+    # TODO: How many iterations do we need?  And can we cut down on that
+    # number if we use velocity intelligently?  For now, we experiment
+    # using the ./design/test_sunrise_moonrise.py script in the
+    # repository, that checks both the old Skyfiled routines and this
+    # new one against the USNO.  It suggests that 3 iterations is enough
+    # for the Moon, the fastest-moving Solar System object, to match.
+    for i in 0, 1, 2:
         _fastify(t)
-        ha, dec, _ = observer.at(t).observe(target).apparent().hadec()
-        desired_ha = f(latitude, dec, h)
+        ha, dec, distance = observer.at(t).observe(target).apparent().hadec()
+        desired_ha = f(latitude, dec, h(distance))
         ha_adjustment = desired_ha - ha.radians
         ha_adjustment = (ha_adjustment + pi) % tau - pi
         timebump = ha_adjustment / ha_per_day
         t = ts.tt_jd(t.whole, t.tt_fraction + timebump)
 
-    is_above_horizon = (desired_ha != 0.0)
+    is_above_horizon = (desired_ha % pi != 0.0)
     return t, is_above_horizon
 
 def find_risings(observer, target, start_time, end_time, horizon_degrees=None):
+    """Return the times at which a target rises above the eastern horizon.
+
+    Given an observer on the Earth’s surface, a target like the Sun or
+    Moon or a planet, and start and stop :class:`~skyfield.timelib.Time`
+    objects, this returns two arrays that have the same length.  The
+    first is a :class:`~skyfield.timelib.Time` listing the moments at
+    which the target rises.  The second array has ``True`` for each time
+    the target really crosses the horizon, and ``False`` when the target
+    merely transits without actually touching the horizon.
+
+    See `risings-and-settings` for examples, and `horizon_degrees` for
+    how to use the ``horizon_degrees`` argument.
+
+    .. versionadded:: 1.47
+
+    """
     return _find(observer, target, start_time, end_time, horizon_degrees,
                  _rising_hour_angle)
 
 def find_settings(observer, target, start_time, end_time, horizon_degrees=None):
+    """Return the times at which a target sets below the western horizon.
+
+    Given an observer on the Earth’s surface, a target like the Sun or
+    Moon or a planet, and start and stop :class:`~skyfield.timelib.Time`
+    objects, this returns two arrays that have the same length.  The
+    first is a :class:`~skyfield.timelib.Time` listing the moments at
+    which the target sets.  The second array has ``True`` for each time
+    the target really crosses the horizon, and ``False`` when the target
+    merely transits without actually touching the horizon.
+
+    See `risings-and-settings` for examples, and `horizon_degrees` for
+    how to use the ``horizon_degrees`` argument.
+
+    .. versionadded:: 1.47
+
+    """
     return _find(observer, target, start_time, end_time, horizon_degrees,
                  _setting_hour_angle)
 
 def find_transits(observer, target, start_time, end_time):
+    """Return the times at which a target transits across the meridian.
+
+    Given an observer on the Earth’s surface, a target like the Sun or
+    Moon or a planet, and start and stop :class:`~skyfield.timelib.Time`
+    objects, this returns a :class:`~skyfield.timelib.Time` array
+    listing the moments at which the target transits across the
+    meridian.
+
+    See `transits` for example code.
+
+    .. versionadded:: 1.47
+
+    """
     t, _ = _find(observer, target, start_time, end_time, 0.0, _transit_ha)
     return t
